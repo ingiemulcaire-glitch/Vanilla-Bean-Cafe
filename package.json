@@ -1,5 +1,5 @@
 {
-  "name": "server-bot",
+  "name": "vanilla-bean",
   "version": "1.0.0",
   "description": "Discord server management bot",
   "main": "index.js",
