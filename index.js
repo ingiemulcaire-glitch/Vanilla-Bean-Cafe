@@ -121,14 +121,11 @@ client.on("interactionCreate", async interaction => {
             });
         }
 
-        const hrRole = interaction.guild.roles.cache.find(
-    role => role.name === "୨୧₊˚ High Ranks♡"
-);
-
 const loaChannel = await client.channels.fetch("1537272589288734850");
 
 if (loaChannel) {
     await loaChannel.send({
+        content: `${interaction.user} <@&1534713555587305533>`,
         embeds: [{
             color: 0xEDE3D3,
             description:
@@ -141,7 +138,7 @@ if (loaChannel) {
                 `꒰<:emojigg_5:1534654998653435905>꒱ **Notes:** ${notes}\n\n` +
 
  `꒰<:WhiteStar:1534608129042550995> **Ping User:** ${interaction.user}\n` +
-                `꒰📨꒱ **Ping HR:** ${hrRole || "High Ranks role not found"}`
+                `꒰📨꒱ **Ping HR:** <@&1534713555587305533>`
         }]
     });
 }
