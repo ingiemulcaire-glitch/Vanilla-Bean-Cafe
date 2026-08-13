@@ -140,6 +140,7 @@ if (loaChannel) {
                 `꒰<:emojigg_4:1534654854750933012>꒱ **Length:** ${days} day(s)\n` +
                 `꒰<:emojigg_5:1534654998653435905>꒱ **Notes:** ${notes}\n\n` +
 
+ `꒰<:WhiteStar:1534608129042550995> **Ping User:** ${interaction.user}\n` +
                 `꒰📨꒱ **Ping HR:** ${hrRole || "High Ranks role not found"}`
         }]
     });
