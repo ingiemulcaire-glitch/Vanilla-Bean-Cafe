@@ -75,6 +75,34 @@ client.on("interactionCreate", async interaction => {
         return;
     }
 
+// LOA Accept button
+if (
+    interaction.isButton() &&
+    interaction.customId === "loa_accept"
+) {
+    const hrRoleId = "1534713555587305533";
+
+    if (!interaction.member.roles.cache.has(hrRoleId)) {
+        return interaction.reply({
+            content: "❌ You do not have permission to approve LOAs.",
+            ephemeral: true
+        });
+    }
+
+    await interaction.update({
+        content: interaction.message.content,
+        embeds: [
+            {
+                color: 0xEDE3D3,
+                description:
+                    interaction.message.embeds[0].description +
+                    `\n\n<:WhiteStar:1534608129042550995> **LOA APPROVED**\nApproved by: ${interaction.user}`
+            }
+        ],
+        components: []
+    });
+}
+
     // LOA form submission
     if (
         interaction.isModalSubmit() &&
