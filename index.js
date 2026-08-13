@@ -121,15 +121,25 @@ client.on("interactionCreate", async interaction => {
             });
         }
 
-        await interaction.reply({
-            content:
-                `✅ **LOA submitted!**\n\n` +
-                `**Reason:** ${reason}\n` +
-                `**Start:** ${startInput}\n` +
-                `**Return:** ${returnInput}\n` +
-                `**Notes:** ${notes}`,
-            ephemeral: true
-        });
+        const loaChannel = await client.channels.fetch("1537272589288734850");
+
+if (loaChannel) {
+    await loaChannel.send({
+        content:
+            `📋 **New LOA Request**\n\n` +
+            `**Member:** ${interaction.user}\n` +
+            `**Reason:** ${reason}\n` +
+            `**Start:** ${startInput}\n` +
+            `**Return:** ${returnInput}\n` +
+            `**Length:** ${days} day(s)\n` +
+            `**Notes:** ${notes}`
+    });
+}
+
+await interaction.reply({
+    content: "✅ Your LOA request has been submitted!",
+    ephemeral: true
+});
     }
 });
 
