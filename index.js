@@ -143,9 +143,7 @@ if (loaChannel) {
                 `꒰<:emojigg_3:1534654794285715466>꒱ **Reason:** ${reason}\n` +
                 `꒰<:emojigg_4:1534654854750933012>꒱ **Length:** ${days} day(s)\n` +
                 `꒰<:emojigg_5:1534654998653435905>꒱ **Notes:** ${notes}\n\n` +
-
- `꒰<:WhiteStar:1534608129042550995> **Ping User:** ${interaction.user}\n` +
-                `꒰📨꒱ **Ping HR:** <@&1534713555587305533>`
+                
         }]
     });
 }
