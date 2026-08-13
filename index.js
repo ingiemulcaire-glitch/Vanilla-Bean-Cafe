@@ -15,11 +15,14 @@ const client = new Client({
 client.commands = new Collection();
 
 const pingCommand = require("./commands/ping.js");
+const loaCommand = require("./commands/loa.js");
 
 client.commands.set(pingCommand.data.name, pingCommand);
+client.commands.set(loaCommand.data.name, loaCommand);
 
 const commands = [
-    pingCommand.data.toJSON()
+    pingCommand.data.toJSON(),
+    loaCommand.data.toJSON()
 ];
 
 const rest = new REST({ version: "10" })
