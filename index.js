@@ -76,16 +76,24 @@ client.on("interactionCreate", async interaction => {
     }
 
     // LOA form submission
-    if (interaction.isModalSubmit() && interaction.customId === "loa_modal") {
+    if (
+        interaction.isModalSubmit() &&
+        interaction.customId === "loa_modal"
+    ) {
+        const reason =
+            interaction.fields.getTextInputValue("loa_reason");
 
-        const reason = interaction.fields.getTextInputValue("loa_reason");
-        const startInput = interaction.fields.getTextInputValue("loa_start");
-        const returnInput = interaction.fields.getTextInputValue("loa_return");
+        const startInput =
+            interaction.fields.getTextInputValue("loa_start");
+
+        const returnInput =
+            interaction.fields.getTextInputValue("loa_return");
 
         let notes = "None provided";
 
         try {
-            notes = interaction.fields.getTextInputValue("loa_notes");
+            notes =
+                interaction.fields.getTextInputValue("loa_notes");
         } catch {
             // Notes are optional
         }
@@ -94,64 +102,122 @@ client.on("interactionCreate", async interaction => {
         const returnDate = new Date(returnInput);
 
         // Check that the dates are valid
-        if (isNaN(startDate.getTime()) || isNaN(returnDate.getTime())) {
+        if (
+            isNaN(startDate.getTime()) ||
+            isNaN(returnDate.getTime())
+        ) {
             return interaction.reply({
-                content: "❌ Please enter valid start and return dates.",
+                content:
+                    "❌ Please enter valid start and return dates.",
                 ephemeral: true
             });
         }
 
-        // Make sure the return date isn't before the start date
+        // Return date cannot be before start date
         if (returnDate < startDate) {
             return interaction.reply({
-                content: "❌ Your return date cannot be before your start date.",
+                content:
+                    "❌ Your return date cannot be before your start date.",
                 ephemeral: true
             });
         }
 
-        // Calculate the length of the LOA
+        // Calculate LOA length
         const difference = returnDate - startDate;
-        const days = Math.ceil(difference / (1000 * 60 * 60 * 24));
 
-        // LOA must be between 3 and 14 days
-if (days < 3) {
-    return interaction.reply({
-        content: "❌ Your LOA must be at least **3 days**.",
-        ephemeral: true
-    });
-}
+        const days = Math.ceil(
+            difference / (1000 * 60 * 60 * 24)
+        );
 
-if (days > 14) {
-    return interaction.reply({
-        content: "❌ Your LOA can be a maximum of **14 days**.",
-        ephemeral: true
-    });
-}
+        // Minimum of 3 days
+        if (days < 3) {
+            return interaction.reply({
+                content:
+                    "❌ Your LOA must be at least **3 days**.",
+                ephemeral: true
+            });
+        }
 
-const loaChannel = await client.channels.fetch("1537272589288734850");
+        // Maximum of 14 days
+        if (days > 14) {
+            return interaction.reply({
+                content:
+                    "❌ Your LOA can be a maximum of **14 days**.",
+                ephemeral: true
+            });
+        }
 
-if (loaChannel) {
-    await loaChannel.send({
-        content: `${interaction.user} <@&1534713555587305533>`,
-        embeds: [{
-            color: 0xEDE3D3,
-            description:
-                "# ꒰<:WhiteStar:1534608129042550995>  LOA REQUEST ꒱\n\n" +
+        // LOA channel
+        const loaChannel =
+            await client.channels.fetch(
+                "1537272589288734850"
+            );
 
-                `꒰<:emojigg_1:1534654332090187897>꒱ **Start Date:** ${startInput}\n` +
-                `꒰<:emojigg_2:1534654486310555668>꒱ **End Date:** ${returnInput}\n` +
-                `꒰<:emojigg_3:1534654794285715466>꒱ **Reason:** ${reason}\n` +
-                `꒰<:emojigg_4:1534654854750933012>꒱ **Length:** ${days} day(s)\n` +
-                `꒰<:emojigg_5:1534654998653435905>꒱ **Notes:** ${notes}\n\n` +
-                
-        }]
-    });
-}
+        if (loaChannel) {
+            await loaChannel.send({
+                // Ping the member and High Ranks
+                content:
+                    `${interaction.user} <@&1534713555587305533>`,
 
-await interaction.reply({
-    content: "🤍 your LOA request has been submitted!",
-    ephemeral: true
-});
+                // LOA embed
+                embeds: [
+                    {
+                        color: 0xEDE3D3,
+
+                        description:
+                            "# ꒰<:WhiteStar:1534608129042550995>  LOA REQUEST ꒱\n\n" +
+
+                            `꒰<:emojigg_1:1534654332090187897>: **Start Date:** ${startInput}\n` +
+
+                            `꒰<:emojigg_2:1534654486310555668>: **End Date:** ${returnInput}\n` +
+
+                            `꒰<:emojigg_3:1534654794285715466>: **Reason:** ${reason}\n` +
+
+                            `꒰<:emojigg_4:1534654854750933012>: **Length:** ${days} day(s)\n` +
+
+                            `꒰<:emojigg_5:1534654998653435905>: **Notes:** ${notes}`
+                    }
+                ],
+
+                // Accept / Deny buttons
+                components: [
+                    {
+                        type: 1,
+
+                        components: [
+                            {
+                                type: 2,
+                                style: 3,
+                                label: "Accept LOA",
+                                custom_id: "loa_accept",
+                                emoji: {
+                                    name: "WhiteStar",
+                                    id: "1534608129042550995"
+                                }
+                            },
+
+                            {
+                                type: 2,
+                                style: 4,
+                                label: "Deny LOA",
+                                custom_id: "loa_deny",
+                                emoji: {
+                                    name: "WhiteStar",
+                                    id: "1534608129042550995"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            });
+        }
+
+        // Private confirmation
+        await interaction.reply({
+            content:
+                "🤍 your LOA request has been submitted!",
+            ephemeral: true
+        });
     }
 });
 
