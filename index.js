@@ -125,19 +125,35 @@ client.on("interactionCreate", async interaction => {
 
 if (loaChannel) {
     await loaChannel.send({
-        content:
-            `📋 **New LOA Request**\n\n` +
-            `**Member:** ${interaction.user}\n` +
-            `**Reason:** ${reason}\n` +
-            `**Start:** ${startInput}\n` +
-            `**Return:** ${returnInput}\n` +
-            `**Length:** ${days} day(s)\n` +
-            `**Notes:** ${notes}`
+        embeds: [{
+            color: 0xEDE3D3,
+            title: "⋆ 𐙚 ̊  leave of absence  ּ  ֶָ֢  ᥫ᭡",
+            description:
+                "ㅤㅤtxtxtxtxtㅤㅤ𓂋ㅤㅤname\n\n" +
+
+                "𐙚 **member**\n" +
+                `ㅤ${interaction.user}\n\n` +
+
+                "𓂋 **reason**\n" +
+                `ㅤ${reason}\n\n` +
+
+                "ᥫ᭡ **start**\n" +
+                `ㅤ${startInput}\n\n` +
+
+                "𓂋 **return**\n" +
+                `ㅤ${returnInput}\n\n` +
+
+                "𐙚 **duration**\n" +
+                `ㅤ${days} day(s)\n\n` +
+
+                "ᥫ᭡ **notes**\n" +
+                `ㅤ${notes}`
+        }]
     });
 }
 
 await interaction.reply({
-    content: "✅ Your LOA request has been submitted!",
+    content: "🤍 your LOA request has been submitted!",
     ephemeral: true
 });
     }
