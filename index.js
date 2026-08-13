@@ -82,6 +82,7 @@ if (
 ) {
     const hrRoleId = "1534713555587305533";
 
+    // Only High Ranks can approve LOAs
     if (!interaction.member.roles.cache.has(hrRoleId)) {
         return interaction.reply({
             content: "❌ You do not have permission to approve LOAs.",
@@ -89,13 +90,82 @@ if (
         });
     }
 
+    const embed = interaction.message.embeds[0];
+    const description = embed.description || "";
+
+    // Get the original LOA information
+    const startDate =
+        description.match(
+            /Start Date:\*\* (.+)/
+        )?.[1] || "Unknown";
+
+    const endDate =
+        description.match(
+            /End Date:\*\* (.+)/
+        )?.[1] || "Unknown";
+
+    const reason =
+        description.match(
+            /Reason:\*\* (.+)/
+        )?.[1] || "Unknown";
+
+    const notes =
+        description.match(
+            /Notes:\*\* (.+)/
+        )?.[1] || "None provided";
+
+    // Get the user who submitted the LOA
+    const userMatch = interaction.message.content.match(
+        /<@!?(\d+)>\s/
+    );
+
+    const userId = userMatch ? userMatch[1] : null;
+
+    const userMention = userId
+        ? `<@${userId}>`
+        : "Unknown User";
+
+    // Send approved LOA to the active LOA channel
+    const activeLoaChannel =
+        await client.channels.fetch(
+            "1536040816085045289"
+        );
+
+    if (activeLoaChannel) {
+        await activeLoaChannel.send({
+            content: userMention,
+            embeds: [
+                {
+                    color: 0xEDE3D3,
+
+                    description:
+                        "# ꒰<:WhiteStar:1534608129042550995>  LOA APPROVED ꒱\n" +
+                        "-# Your LOA has been successfully submitted and approved.\n\n" +
+
+                        `꒰<:emojigg_1:1534654332090187897>: **Start Date:** ${startDate}\n` +
+
+                        `꒰<:emojigg_2:1534654486310555668>: **End Date:** ${endDate}\n` +
+
+                        `꒰<:emojigg_3:1534654794285715466>: **Reason:** ${reason}\n` +
+
+                        `꒰<:emojigg_4:1534654854750933012>: **Approved By:** ${interaction.user}\n\n` +
+
+                        `꒰<:WhiteStar:1534608129042550995>꒱ **Ping User:** ${userMention}\n` +
+
+                        `꒰📝꒱ **Notes:** ${notes}`
+                }
+            ]
+        });
+    }
+
+    // Update the original LOA request
     await interaction.update({
         content: interaction.message.content,
         embeds: [
             {
                 color: 0xEDE3D3,
                 description:
-                    interaction.message.embeds[0].description +
+                    description +
                     `\n\n<:WhiteStar:1534608129042550995> **LOA APPROVED**\nApproved by: ${interaction.user}`
             }
         ],
