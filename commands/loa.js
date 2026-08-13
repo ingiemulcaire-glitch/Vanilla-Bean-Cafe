@@ -20,8 +20,9 @@ module.exports = {
             .setCustomId("loa_reason")
             .setLabel("Reason")
             .setStyle(TextInputStyle.Paragraph)
-            .setPlaceholder("Why are you going on LOA?")
-            .setRequired(true);
+            .setPlaceholder("Example: Going to Disney Land")
+            .setRequired(true)
+            .setMaxLength(500);
 
         const startDate = new TextInputBuilder()
             .setCustomId("loa_start")
@@ -37,10 +38,19 @@ module.exports = {
             .setPlaceholder("Example: August 22, 2026")
             .setRequired(true);
 
+        const notes = new TextInputBuilder()
+            .setCustomId("loa_notes")
+            .setLabel("Notes (Optional)")
+            .setStyle(TextInputStyle.Paragraph)
+            .setPlaceholder("Example: I will complete my orders while on LOA.")
+            .setRequired(false)
+            .setMaxLength(500);
+
         modal.addComponents(
             new ActionRowBuilder().addComponents(reason),
             new ActionRowBuilder().addComponents(startDate),
-            new ActionRowBuilder().addComponents(returnDate)
+            new ActionRowBuilder().addComponents(returnDate),
+            new ActionRowBuilder().addComponents(notes)
         );
 
         await interaction.showModal(modal);
