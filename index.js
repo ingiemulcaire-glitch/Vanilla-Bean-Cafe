@@ -173,6 +173,48 @@ if (
     });
 }
 
+// LOA Deny button
+if (
+    interaction.isButton() &&
+    interaction.customId === "loa_deny"
+) {
+    const hrRoleId = "1534713555587305533";
+
+    // Only High Ranks can deny LOAs
+    if (!interaction.member.roles.cache.has(hrRoleId)) {
+        return interaction.reply({
+            content: "❌ You do not have permission to deny LOAs.",
+            ephemeral: true
+        });
+    }
+
+    const {
+        ModalBuilder,
+        TextInputBuilder,
+        TextInputStyle,
+        ActionRowBuilder
+    } = require("discord.js");
+
+    const modal = new ModalBuilder()
+        .setCustomId("loa_deny_modal")
+        .setTitle("Deny LOA");
+
+    const reasonInput = new TextInputBuilder()
+        .setCustomId("deny_reason")
+        .setLabel("Reason for denial")
+        .setStyle(TextInputStyle.Paragraph)
+        .setPlaceholder("Explain why this LOA is being denied...")
+        .setRequired(true)
+        .setMaxLength(500);
+
+    const row = new ActionRowBuilder()
+        .addComponents(reasonInput);
+
+    modal.addComponents(row);
+
+    await interaction.showModal(modal);
+}
+
     // LOA form submission
     if (
         interaction.isModalSubmit() &&
