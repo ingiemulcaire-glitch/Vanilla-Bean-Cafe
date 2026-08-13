@@ -113,13 +113,20 @@ client.on("interactionCreate", async interaction => {
         const difference = returnDate - startDate;
         const days = Math.ceil(difference / (1000 * 60 * 60 * 24));
 
-        // Maximum LOA = 14 days
-        if (days > 14) {
-            return interaction.reply({
-                content: "❌ Your LOA can be a maximum of **14 days**.",
-                ephemeral: true
-            });
-        }
+        // LOA must be between 3 and 14 days
+if (days < 3) {
+    return interaction.reply({
+        content: "❌ Your LOA must be at least **3 days**.",
+        ephemeral: true
+    });
+}
+
+if (days > 14) {
+    return interaction.reply({
+        content: "❌ Your LOA can be a maximum of **14 days**.",
+        ephemeral: true
+    });
+}
 
 const loaChannel = await client.channels.fetch("1537272589288734850");
 
