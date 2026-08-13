@@ -127,27 +127,16 @@ if (loaChannel) {
     await loaChannel.send({
         embeds: [{
             color: 0xEDE3D3,
-            title: "⋆ 𐙚 ̊  leave of absence  ּ  ֶָ֢  ᥫ᭡",
             description:
-                "ㅤㅤtxtxtxtxtㅤㅤ𓂋ㅤㅤname\n\n" +
+                "# ꒰<:WhiteStar:1534608129042550995>  LOA REQUEST ꒱\n\n" +
 
-                "𐙚 **member**\n" +
-                `ㅤ${interaction.user}\n\n` +
+                `꒰<:emojigg_1:1534654332090187897>꒱ **Start Date:** ${startInput}\n` +
+                `꒰<:emojigg_2:1534654486310555668>꒱ **End Date:** ${returnInput}\n` +
+                `꒰<:emojigg_3:1534654794285715466>꒱ **Reason:** ${reason}\n` +
+                `꒰<:emojigg_4:1534654854750933012>꒱ **Length:** ${days} day(s)\n` +
+                `꒰<:emojigg_5:1534654998653435905>꒱ **Notes:** ${notes}\n\n` +
 
-                "𓂋 **reason**\n" +
-                `ㅤ${reason}\n\n` +
-
-                "ᥫ᭡ **start**\n" +
-                `ㅤ${startInput}\n\n` +
-
-                "𓂋 **return**\n" +
-                `ㅤ${returnInput}\n\n` +
-
-                "𐙚 **duration**\n" +
-                `ㅤ${days} day(s)\n\n` +
-
-                "ᥫ᭡ **notes**\n" +
-                `ㅤ${notes}`
+                `꒰📨꒱ **Ping HR:** <@&1537279044687765656>`
         }]
     });
 }
