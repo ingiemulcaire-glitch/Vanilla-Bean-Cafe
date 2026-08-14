@@ -1419,6 +1419,15 @@ client.on("messageCreate", async message => {
             `They may currently be offline or busy. If you need something **right away**, please contact a **Staff member** for general assistance or **HR** if your question/concern is staff-related.\n\n` +
             `Thank you for your patience! ♡`
     });
+    
+    setTimeout(async () => {
+        try {
+            await reply.delete();
+            } catch (error) {
+                console.error("Could not delete mention response:, error);
+                }
+                }, 10000);
+        
 });
 
 // ==================================================
