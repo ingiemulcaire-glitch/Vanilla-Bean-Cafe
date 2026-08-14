@@ -1443,7 +1443,7 @@ const now = new date();
     const reply = await message.reply({
         content:
             `🤍 **${personText} may be unavailable right now!**\n\n` +
-            `${timezoneText ? timezoneText + "\n\n" : ""}` +
+            `${timezoneText}\n\n` +
             `They may currently be offline or busy. If you need something **right away**, please contact a **Staff member** for general assistance or **HR** if your question or concern is staff-related.\n\n` +
             `Thank you for your patience! ♡`
     });
