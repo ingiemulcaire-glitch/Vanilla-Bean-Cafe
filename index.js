@@ -1379,39 +1379,60 @@ client.on("messageCreate", async message => {
         return;
     }
 
-    // Check for Aspen or Gem
     const taggedUser = message.mentions.users.find(
         user => monitoredUsers.includes(user.id)
     );
 
-    // Check for Owner Team roles
     const taggedRole = message.mentions.roles.find(
         role => monitoredRoles.includes(role.id)
     );
 
-    // Nothing was mentioned
     if (!taggedUser && !taggedRole) {
         return;
     }
 
     let personText = "the Owner Team";
+    let timezoneText = "";
 
-    if (taggedUser) {
-        if (taggedUser.id === "1311116544838860891") {
-            personText = "Aspen";
-        } else if (taggedUser.id === "1128434621240057998") {
-            personText = "Gem";
-        }
+    // Aspen
+    if (
+        taggedUser &&
+        taggedUser.id === "1311116544838860891"
+    ) {
+        personText = "Aspen";
+
+        const pstTime = Math.floor(
+            (Date.now() - (3 * 60 * 60 * 1000)) / 1000
+        );
+
+        timezoneText =
+            `Aspen is in **PST**. Their local time is approximately <t:${pstTime}:t>.`;
+    }
+
+    // Gem
+    else if (
+        taggedUser &&
+        taggedUser.id === "1128434621240057998"
+    ) {
+        personText = "Gem";
+
+        const cstTime = Math.floor(
+            (Date.now() - (1 * 60 * 60 * 1000)) / 1000
+        );
+
+        timezoneText =
+            `Gem is in **CST**. Their local time is approximately <t:${cstTime}:t>.`;
     }
 
     const reply = await message.reply({
         content:
             `🤍 **${personText} may be unavailable right now!**\n\n` +
+            `${timezoneText ? timezoneText + "\n\n" : ""}` +
             `They may currently be offline or busy. If you need something **right away**, please contact a **Staff member** for general assistance or **HR** if your question or concern is staff-related.\n\n` +
             `Thank you for your patience! ♡`
     });
 
-    // Delete Vanilla Bean's response after 10 seconds
+    // Delete after 10 seconds
     setTimeout(() => {
         reply.delete().catch(() => {});
     }, 10000);
