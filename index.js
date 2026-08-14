@@ -1400,13 +1400,21 @@ client.on("messageCreate", async message => {
         taggedUser.id === "1311116544838860891"
     ) {
         personText = "Aspen";
+        
+        const now = new Date();
 
-        const pstTime = Math.floor(
-            (Date.now() - (3 * 60 * 60 * 1000)) / 1000
-        );
+        const aspenTime = new Intl.DateTimeFormat(
+            "en-US",
+            {
+            timeZone: "America/Los_Angeles",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true
+            }
+            ).format(now);
 
         timezoneText =
-            `Aspen is in **PST**. Their local time is approximately <t:${pstTime}:t>.`;
+            `Aspen's local time is currently **${aspenTime}**.`;
     }
 
     // Gem
@@ -1416,12 +1424,20 @@ client.on("messageCreate", async message => {
     ) {
         personText = "Gem";
 
-        const cstTime = Math.floor(
-            (Date.now() - (1 * 60 * 60 * 1000)) / 1000
-        );
+const now = new date();
+
+        const gemTime = new Intl.DataTimeFormat(
+            "en-US",
+            {
+            timeZone: "America/Chicago",
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true
+                }
+                ).format(now);
 
         timezoneText =
-            `Gem is in **CST**. Their local time is approximately <t:${cstTime}:t>.`;
+            `Gem' local time is currently **${gemTime}**.`;
     }
 
     const reply = await message.reply({
