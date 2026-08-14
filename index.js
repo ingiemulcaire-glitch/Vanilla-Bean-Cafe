@@ -636,7 +636,7 @@ client.on(
 
                         embeds: [
                             {
-                                color: 0xEDE3D3,
+                                color: 0x77DD77,
 
                                 description:
 
@@ -999,7 +999,7 @@ client.on(
 
                         embeds: [
                             {
-                                color: 0xEDE3D3,
+                                color: 0xFF6961,
 
                                 description:
 
