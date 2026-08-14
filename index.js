@@ -12,7 +12,9 @@ const {
 
 const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
     ]
 });
 
@@ -1356,6 +1358,68 @@ pendingLOAs.add(interaction.user.id);
     }
 );
 
+// ==================================================
+// OWNER / ASPEN / GEM MENTION RESPONSE
+// ==================================================
+
+const monitoredUsers = [
+    "1311116544838860891", // Aspen
+    "1128434621240057998"  // Gem
+];
+
+const monitoredRoles = [
+    "1534394188333060208", // Owner Team
+    "1534394188333060207"  // Owner Team
+];
+
+client.on("messageCreate", async message => {
+
+    // Ignore bots
+    if (message.author.bot) {
+        return;
+    }
+
+    // Check if Aspen or Gem was mentioned
+    const taggedUser = message.mentions.users.find(
+        user => monitoredUsers.includes(user.id)
+    );
+
+    // Check if either Owner role was mentioned
+    const taggedRole = message.mentions.roles.find(
+        role => monitoredRoles.includes(role.id)
+    );
+
+    // Nothing monitored was mentioned
+    if (!taggedUser && !taggedRole) {
+        return;
+    }
+
+    let personText = "the Owner Team";
+
+    if (taggedUser) {
+
+        if (
+            taggedUser.id ===
+            "1311116544838860891"
+        ) {
+            personText = "Aspen";
+        }
+
+        if (
+            taggedUser.id ===
+            "1128434621240057998"
+        ) {
+            personText = "Gem";
+        }
+    }
+
+    await message.reply({
+        content:
+            `🤍 **${personText} may be unavailable right now!**\n\n` +
+            `They may currently be offline or busy. If you need something **right away**, please contact a **Staff member** for general assistance or **HR** if your question/concern is staff-related.\n\n` +
+            `Thank you for your patience! ♡`
+    });
+});
 
 // ==================================================
 // LOGIN
