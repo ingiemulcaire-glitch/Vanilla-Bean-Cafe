@@ -173,14 +173,54 @@ if (
     });
 }
 
-// LOA denial submission
+// LOA Deny button
 if (
-    interaction.isModalSubmit() &&
-    interaction.customId === "loa_deny_modal"
+    interaction.isButton() &&
+    interaction.customId === "loa_deny"
 ) {
     const hrRoleId = "1534713555587305533";
 
-    // Only High Ranks can deny LOAs
+    if (!interaction.member.roles.cache.has(hrRoleId)) {
+        return interaction.reply({
+            content: "❌ You do not have permission to deny LOAs.",
+            ephemeral: true
+        });
+    }
+
+    const {
+        ModalBuilder,
+        TextInputBuilder,
+        TextInputStyle,
+        ActionRowBuilder
+    } = require("discord.js");
+
+    const modal = new ModalBuilder()
+        .setCustomId(`loa_deny_modal_${interaction.message.id}`)
+        .setTitle("Deny LOA");
+
+    const reasonInput = new TextInputBuilder()
+        .setCustomId("deny_reason")
+        .setLabel("Reason for denial")
+        .setStyle(TextInputStyle.Paragraph)
+        .setPlaceholder("Explain why this LOA is being denied...")
+        .setRequired(true)
+        .setMaxLength(500);
+
+    const row = new ActionRowBuilder()
+        .addComponents(reasonInput);
+
+    modal.addComponents(row);
+
+    await interaction.showModal(modal);
+}
+
+// LOA denial submission
+if (
+    interaction.isModalSubmit() &&
+    interaction.customId.startsWith("loa_deny_modal_")
+) {
+    const hrRoleId = "1534713555587305533";
+
     if (!interaction.member.roles.cache.has(hrRoleId)) {
         return interaction.reply({
             content: "❌ You do not have permission to deny LOAs.",
@@ -191,12 +231,110 @@ if (
     const denialReason =
         interaction.fields.getTextInputValue("deny_reason");
 
-    await interaction.reply({
-        content: "✅ LOA denial recorded.",
-        ephemeral: true
+    const messageId =
+        interaction.customId.replace("loa_deny_modal_", "");
+
+    const loaChannel =
+        await client.channels.fetch("1537272589288734850");
+
+    if (!loaChannel) {
+        return interaction.reply({
+            content: "❌ I couldn't find the LOA channel.",
+            ephemeral: true
+        });
+    }
+
+    const loaMessage =
+        await loaChannel.messages.fetch(messageId);
+
+    if (!loaMessage) {
+        return interaction.reply({
+            content: "❌ I couldn't find the original LOA request.",
+            ephemeral: true
+        });
+    }
+
+    const description =
+        loaMessage.embeds[0]?.description || "";
+
+    const startDate =
+        description.match(/Start Date:\*\* (.+)/)?.[1] ||
+        "Unknown";
+
+    const endDate =
+        description.match(/End Date:\*\* (.+)/)?.[1] ||
+        "Unknown";
+
+    const reason =
+        description.match(/Reason:\*\* (.+)/)?.[1] ||
+        "Unknown";
+
+    const notes =
+        description.match(/Notes:\*\* (.+)/)?.[1] ||
+        "None provided";
+
+    const userMatch =
+        loaMessage.content.match(/<@!?(\d+)>/);
+
+    const userId =
+        userMatch ? userMatch[1] : null;
+
+    const userMention =
+        userId ? `<@${userId}>` : "Unknown User";
+
+    // Send denied LOA to the active LOA channel
+    const activeLoaChannel =
+        await client.channels.fetch(
+            "1536040816085045289"
+        );
+
+    if (activeLoaChannel) {
+        await activeLoaChannel.send({
+            content: userMention,
+            embeds: [
+                {
+                    color: 0xEDE3D3,
+
+                    description:
+                        "# ꒰<:WhiteStar:1534608129042550995>  LOA DENIED ꒱\n" +
+                        "-# Your LOA request has been denied.\n\n" +
+
+                        `꒰<:emojigg_1:1534654332090187897>: **Start Date:** ${startDate}\n` +
+
+                        `꒰<:emojigg_2:1534654486310555668>: **End Date:** ${endDate}\n` +
+
+                        `꒰<:emojigg_3:1534654794285715466>: **Reason:** ${reason}\n` +
+
+                        `꒰<:emojigg_4:1534654854750933012>: **Denied By:** ${interaction.user}\n\n` +
+
+                        `꒰❌꒱ **Denial Reason:** ${denialReason}\n` +
+
+                        `꒰<:WhiteStar:1534608129042550995>꒱ **Ping User:** ${userMention}\n` +
+
+                        `꒰📝꒱ **Notes:** ${notes}`
+                }
+            ]
+        });
+    }
+
+    // Update original request
+    await loaMessage.edit({
+        embeds: [
+            {
+                color: 0xEDE3D3,
+
+                description:
+                    description +
+                    `\n\n<:WhiteStar:1534608129042550995> **LOA DENIED**\nDenied by: ${interaction.user}\nReason: ${denialReason}`
+            }
+        ],
+        components: []
     });
 
-    console.log(`LOA denied by ${interaction.user.tag}: ${denialReason}`);
+    await interaction.reply({
+        content: "❌ LOA has been denied.",
+        ephemeral: true
+    });
 }
 
     // LOA form submission
