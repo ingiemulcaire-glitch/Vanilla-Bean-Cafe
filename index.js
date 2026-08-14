@@ -410,7 +410,8 @@ client.on(
                     });
 
                 }
-
+                
+pendingLOAs.delete(userId);
 
                 const embed =
                     interaction.message.embeds[0];
@@ -1048,6 +1049,7 @@ client.on(
 
                 });
 
+pendingLOAs.delete(userId);
 
                 await interaction.reply({
 
@@ -1070,6 +1072,16 @@ client.on(
                 interaction.isModalSubmit() &&
                 interaction.customId === "loa_modal"
             ) {
+                
+                        if (pendingLOAs.has(interaction.user.id)) {
+            return interaction.reply({
+                content:
+                    "❌ You already have a pending LOA request. Please wait for HR to approve or deny it before submitting another.",
+                ephemeral: true
+            });
+        }
+
+        pendingLOAs.add(interaction.user.id);
 
                 const reason =
                     interaction.fields.getTextInputValue(
@@ -1239,7 +1251,7 @@ client.on(
                 // --------------------------------------
                 // Send request
                 // --------------------------------------
-
+pendingLOAs.add(interaction.user.id);
                 await loaChannel.send({
 
                     content:
