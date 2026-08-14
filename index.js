@@ -42,7 +42,6 @@ const ACTIVE_LOA_CHANNEL = "1536040816085045289";
 const HIGH_RANK_ROLE = "1534713555587305533";
 const LOA_ROLE = "1537663902987587707";
 
-
 // ================================
 // Helper: Parse MM/DD/YYYY
 // ================================
@@ -95,7 +94,6 @@ function parseDateOnly(dateString) {
     return date;
 }
 
-
 // ================================
 // Helper: Discord timestamp
 // ================================
@@ -133,7 +131,6 @@ client.once("ready", async () => {
         );
     }
 });
-
 
 // ================================
 // Interactions
@@ -184,7 +181,6 @@ client.on(
             return;
         }
 
-
         // ================================
         // ACCEPT LOA
         // ================================
@@ -211,7 +207,6 @@ client.on(
 
             const description =
                 embed?.description || "";
-
 
             // Get original LOA information
 
