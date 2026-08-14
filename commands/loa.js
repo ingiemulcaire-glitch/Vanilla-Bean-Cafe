@@ -13,6 +13,18 @@ module.exports = {
 
     async execute(interaction) {
 
+const LOA_ROLE_ID = "1537663902987587707";
+
+if (
+    interaction.member.roles.cache.has(LOA_ROLE_ID)
+) {
+    return interaction.reply({
+        content:
+            "❌ You already have an active LOA. You can submit another LOA once your current LOA has ended.",
+        ephemeral: true
+    });
+}
+
         const modal = new ModalBuilder()
             .setCustomId("loa_modal")
             .setTitle("Leave of Absence");
