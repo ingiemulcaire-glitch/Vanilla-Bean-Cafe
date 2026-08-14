@@ -1419,26 +1419,42 @@ client.on("messageCreate", async message => {
 
     // Gem
     else if (
+
         taggedUser &&
+
         taggedUser.id === "1128434621240057998"
+
     ) {
+
         personText = "Gem";
 
-const now = new date();
+        const now = new Date();
 
-        const gemTime = new Intl.DataTimeFormat(
+        const gemTime = new Intl.DateTimeFormat(
+
             "en-US",
+
             {
-            timeZone: "America/Chicago",
+
+                timeZone: "America/Chicago",
+
                 hour: "numeric",
+
                 minute: "2-digit",
+
                 hour12: true
-                }
-                ).format(now);
+
+            }
+
+        ).format(now);
 
         timezoneText =
-            `Gem' local time is currently **${gemTime}**.`;
+
+            `Gem's local time is currently **${gemTime}**.`;
+
     }
+
+   
 
     const reply = await message.reply({
         content:
