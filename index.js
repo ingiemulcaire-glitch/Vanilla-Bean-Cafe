@@ -81,6 +81,7 @@ if (
     interaction.customId === "loa_accept"
 ) {
     const hrRoleId = "1534713555587305533";
+    const loaRoleId = "1537663902987587707";
 
     // Only High Ranks can approve LOAs
     if (!interaction.member.roles.cache.has(hrRoleId)) {
@@ -93,7 +94,7 @@ if (
     const embed = interaction.message.embeds[0];
     const description = embed.description || "";
 
-    // Get the original LOA information
+    // Get original LOA information
     const startDate =
         description.match(
             /Start Date:\*\* (.+)/
@@ -115,17 +116,77 @@ if (
         )?.[1] || "None provided";
 
     // Get the user who submitted the LOA
-    const userMatch = interaction.message.content.match(
-        /<@!?(\d+)>\s/
-    );
+    const userMatch =
+        interaction.message.content.match(
+            /<@!?(\d+)>/
+        );
 
-    const userId = userMatch ? userMatch[1] : null;
+    const userId =
+        userMatch ? userMatch[1] : null;
 
-    const userMention = userId
-        ? `<@${userId}>`
-        : "Unknown User";
+    const userMention =
+        userId
+            ? `<@${userId}>`
+            : "Unknown User";
 
-    // Send approved LOA to the active LOA channel
+    // The exact moment HR approves the LOA
+    const approvalTime = new Date();
+
+    // Convert MM/DD/YYYY into a reliable date
+const parts = endDate.split("/");
+
+const requestedEndDate = new Date(
+    parts[2],
+    parts[0] - 1,
+    parts[1],
+    approvalTime.getHours(),
+    approvalTime.getMinutes(),
+    approvalTime.getSeconds()
+);
+
+    // Discord timestamps
+    const startTimestamp =
+        Math.floor(
+            approvalTime.getTime() / 1000
+        );
+
+    const endTimestamp =
+        Math.floor(
+            requestedEndDate.getTime() / 1000
+        );
+
+    // Find the member
+    let member = null;
+
+    if (userId) {
+        try {
+            member =
+                await interaction.guild.members.fetch(
+                    userId
+                );
+        } catch {
+            console.log(
+                "Could not fetch LOA member."
+            );
+        }
+    }
+
+    // Add LOA role
+    if (member) {
+        try {
+            await member.roles.add(
+                loaRoleId,
+                "LOA approved"
+            );
+        } catch (error) {
+            console.error(
+                "Could not add LOA role:",
+                error
+            );
+        }
+    }
+
+    // Send approved LOA to Active LOAs
     const activeLoaChannel =
         await client.channels.fetch(
             "1536040816085045289"
@@ -134,6 +195,7 @@ if (
     if (activeLoaChannel) {
         await activeLoaChannel.send({
             content: userMention,
+
             embeds: [
                 {
                     color: 0xEDE3D3,
@@ -142,9 +204,9 @@ if (
                         "# ꒰<:WhiteStar:1534608129042550995>  LOA APPROVED ꒱\n" +
                         "-# Your LOA has been successfully submitted and approved.\n\n" +
 
-                        `꒰<:emojigg_1:1534654332090187897>: **Start Date:** ${startDate}\n` +
+                        `꒰<:emojigg_1:1534654332090187897>: **Start Date:** <t:${startTimestamp}:F>\n` +
 
-                        `꒰<:emojigg_2:1534654486310555668>: **End Date:** ${endDate}\n` +
+                        `꒰<:emojigg_2:1534654486310555668>: **End Date:** <t:${endTimestamp}:F>\n` +
 
                         `꒰<:emojigg_3:1534654794285715466>: **Reason:** ${reason}\n` +
 
@@ -158,6 +220,24 @@ if (
         });
     }
 
+    // Mark original request as approved
+    await interaction.update({
+        content: interaction.message.content,
+
+        embeds: [
+            {
+                color: 0xEDE3D3,
+
+                description:
+                    description +
+                    `\n\n<:WhiteStar:1534608129042550995> **LOA APPROVED**\nApproved by: ${interaction.user}`
+            }
+        ],
+
+        components: []
+    });
+}
+    
     // Update the original LOA request
     await interaction.update({
         content: interaction.message.content,
