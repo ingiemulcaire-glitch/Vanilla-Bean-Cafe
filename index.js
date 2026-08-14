@@ -1359,7 +1359,7 @@ pendingLOAs.add(interaction.user.id);
 );
 
 // ==================================================
-// OWNER / ASPEN / GEM MENTION RESPONSE
+// ASPEN / GEM / OWNER TEAM MENTION RESPONSE
 // ==================================================
 
 const monitoredUsers = [
@@ -1379,17 +1379,17 @@ client.on("messageCreate", async message => {
         return;
     }
 
-    // Check if Aspen or Gem was mentioned
+    // Check for Aspen or Gem
     const taggedUser = message.mentions.users.find(
         user => monitoredUsers.includes(user.id)
     );
 
-    // Check if either Owner role was mentioned
+    // Check for Owner Team roles
     const taggedRole = message.mentions.roles.find(
         role => monitoredRoles.includes(role.id)
     );
 
-    // Nothing monitored was mentioned
+    // Nothing was mentioned
     if (!taggedUser && !taggedRole) {
         return;
     }
@@ -1397,37 +1397,24 @@ client.on("messageCreate", async message => {
     let personText = "the Owner Team";
 
     if (taggedUser) {
-
-        if (
-            taggedUser.id ===
-            "1311116544838860891"
-        ) {
+        if (taggedUser.id === "1311116544838860891") {
             personText = "Aspen";
-        }
-
-        if (
-            taggedUser.id ===
-            "1128434621240057998"
-        ) {
+        } else if (taggedUser.id === "1128434621240057998") {
             personText = "Gem";
         }
     }
 
-    await message.reply({
+    const reply = await message.reply({
         content:
             `🤍 **${personText} may be unavailable right now!**\n\n` +
-            `They may currently be offline or busy. If you need something **right away**, please contact a **Staff member** for general assistance or **HR** if your question/concern is staff-related.\n\n` +
+            `They may currently be offline or busy. If you need something **right away**, please contact a **Staff member** for general assistance or **HR** if your question or concern is staff-related.\n\n` +
             `Thank you for your patience! ♡`
     });
-    
-    setTimeout(async () => {
-        try {
-            await reply.delete();
-            } catch (error) {
-                console.error("Could not delete mention response:, error);
-                }
-                }, 10000);
-        
+
+    // Delete Vanilla Bean's response after 10 seconds
+    setTimeout(() => {
+        reply.delete().catch(() => {});
+    }, 10000);
 });
 
 // ==================================================
