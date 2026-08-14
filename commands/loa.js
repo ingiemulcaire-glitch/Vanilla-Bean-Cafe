@@ -13,21 +13,53 @@ module.exports = {
 
     async execute(interaction) {
 
-const LOA_ROLE_ID = "1537663902987587707";
+async execute(interaction) {
 
-if (
-    interaction.member.roles.cache.has(LOA_ROLE_ID)
-) {
-    return interaction.reply({
-        content:
-            "❌ You already have an active LOA. You can submit another LOA once your current LOA has ended.",
-        ephemeral: true
-    });
-}
+    // ==========================================
+    // ROLE REQUIRED TO USE /LOA
+    // ==========================================
 
-        const modal = new ModalBuilder()
-            .setCustomId("loa_modal")
-            .setTitle("Leave of Absence");
+    const REQUIRED_LOA_ROLE = "1537915689141149696";
+
+    if (
+        !interaction.member.roles.cache.has(
+            REQUIRED_LOA_ROLE
+        )
+    ) {
+        return interaction.reply({
+            content:
+                "❌ You do not have permission to use the LOA command.",
+            ephemeral: true
+        });
+    }
+
+
+    // ==========================================
+    // CHECK FOR EXISTING ACTIVE LOA
+    // ==========================================
+
+    const LOA_ROLE_ID = "1537663902987587707";
+
+    if (
+        interaction.member.roles.cache.has(
+            LOA_ROLE_ID
+        )
+    ) {
+        return interaction.reply({
+            content:
+                "❌ You already have an active LOA. You can submit another LOA once your current LOA has ended.",
+            ephemeral: true
+        });
+    }
+
+
+    // ==========================================
+    // CREATE LOA MODAL
+    // ==========================================
+
+    const modal = new ModalBuilder()
+        .setCustomId("loa_modal")
+        .setTitle("Leave of Absence");
 
         const reason = new TextInputBuilder()
             .setCustomId("loa_reason")
