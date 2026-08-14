@@ -12,6 +12,7 @@ module.exports = {
         .setDescription("Submit a leave of absence"),
 
     async execute(interaction) {
+
         const modal = new ModalBuilder()
             .setCustomId("loa_modal")
             .setTitle("Leave of Absence");
@@ -29,20 +30,24 @@ module.exports = {
             .setLabel("Start Date")
             .setStyle(TextInputStyle.Short)
             .setPlaceholder("Example: August 15, 2026")
-            .setRequired(true);
+            .setRequired(true)
+            .setMaxLength(50);
 
         const returnDate = new TextInputBuilder()
             .setCustomId("loa_return")
             .setLabel("Return Date")
             .setStyle(TextInputStyle.Short)
             .setPlaceholder("Example: August 22, 2026")
-            .setRequired(true);
+            .setRequired(true)
+            .setMaxLength(50);
 
         const notes = new TextInputBuilder()
             .setCustomId("loa_notes")
             .setLabel("Notes (Optional)")
             .setStyle(TextInputStyle.Paragraph)
-            .setPlaceholder("Example: I will complete my orders while on LOA.")
+            .setPlaceholder(
+                "Example: I will complete my orders while on LOA."
+            )
             .setRequired(false)
             .setMaxLength(500);
 
