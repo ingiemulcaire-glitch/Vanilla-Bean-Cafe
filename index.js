@@ -173,10 +173,10 @@ if (
     });
 }
 
-// LOA Deny button
+// LOA denial submission
 if (
-    interaction.isButton() &&
-    interaction.customId === "loa_deny"
+    interaction.isModalSubmit() &&
+    interaction.customId === "loa_deny_modal"
 ) {
     const hrRoleId = "1534713555587305533";
 
@@ -188,31 +188,15 @@ if (
         });
     }
 
-    const {
-        ModalBuilder,
-        TextInputBuilder,
-        TextInputStyle,
-        ActionRowBuilder
-    } = require("discord.js");
+    const denialReason =
+        interaction.fields.getTextInputValue("deny_reason");
 
-    const modal = new ModalBuilder()
-        .setCustomId("loa_deny_modal")
-        .setTitle("Deny LOA");
+    await interaction.reply({
+        content: "✅ LOA denial recorded.",
+        ephemeral: true
+    });
 
-    const reasonInput = new TextInputBuilder()
-        .setCustomId("deny_reason")
-        .setLabel("Reason for denial")
-        .setStyle(TextInputStyle.Paragraph)
-        .setPlaceholder("Explain why this LOA is being denied...")
-        .setRequired(true)
-        .setMaxLength(500);
-
-    const row = new ActionRowBuilder()
-        .addComponents(reasonInput);
-
-    modal.addComponents(row);
-
-    await interaction.showModal(modal);
+    console.log(`LOA denied by ${interaction.user.tag}: ${denialReason}`);
 }
 
     // LOA form submission
