@@ -22,20 +22,16 @@ client.commands = new Collection();
 
 const pingCommand = require("./commands/ping.js");
 const loaCommand = require("./commands/loa.js");
+const logCommand = require("./commands/log.js");
 
-client.commands.set(
-    pingCommand.data.name,
-    pingCommand
-);
-
-client.commands.set(
-    loaCommand.data.name,
-    loaCommand
-);
+client.commands.set(pingCommand.data.name, pingCommand);
+client.commands.set(loaCommand.data.name, loaCommand);
+client.commands.set(logCommand.data.name, logCommand);
 
 const commands = [
     pingCommand.data.toJSON(),
-    loaCommand.data.toJSON()
+    loaCommand.data.toJSON(),
+    logCommand.data.toJSON()
 ];
 
 const rest = new REST({
