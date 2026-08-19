@@ -20,6 +20,10 @@ const client = new Client({
 
 client.commands = new Collection();
 
+// ==================================================
+// COMMANDS
+// ==================================================
+
 const pingCommand = require("./commands/ping.js");
 const loaCommand = require("./commands/loa.js");
 const logCommand = require("./commands/log.js");
@@ -49,9 +53,8 @@ const rest = new REST({
     version: "10"
 }).setToken(process.env.TOKEN);
 
-
 // ==================================================
-// IDs
+// LOA / SERVER IDs
 // ==================================================
 
 const LOA_REQUEST_CHANNEL =
@@ -66,10 +69,40 @@ const HIGH_RANK_ROLE =
 const LOA_ROLE =
     "1537663902987587707";
 
+const LOA_ALLOWED_ROLE =
+    "1537915689141149696";
+
+// ==================================================
+// CHEF LOG IDs
+// ==================================================
+
+const CHEF_ROLE_ID =
+    "1534681434105712690";
+
+const CHEF_LOG_THREAD_ID =
+    "1534966724418342953";
+
+// ==================================================
+// PENDING LOAS
+// ==================================================
+
+// Keeps people from submitting multiple
+// LOA requests while one is awaiting approval.
+
+const pendingLOAs = new Set();
+
+// ==================================================
+// ORDER COUNTS
+// ==================================================
+
+// These count successfully logged orders
+// while the bot is online.
+
+const chefOrderCounts = new Map();
+const customerOrderCounts = new Map();
 
 // ==================================================
 // DATE PARSER
-// Accepts multiple date formats
 // ==================================================
 
 function parseUserDate(input) {
@@ -86,14 +119,6 @@ function parseUserDate(input) {
     let day;
     let month;
     let year;
-
-    // ------------------------------------------
-    // Month name formats
-    // August 15 2026
-    // 15 August 2026
-    // Aug 15 2026
-    // 15 Aug 2026
-    // ------------------------------------------
 
     const monthNames = {
         january: 0,
@@ -126,6 +151,11 @@ function parseUserDate(input) {
         dec: 11
     };
 
+    // ------------------------------------------
+    // Month Day Year
+    // Example: August 15 2026
+    // ------------------------------------------
+
     let match = value.match(
         /^([A-Za-z]+)\s+(\d{1,2})\s+(\d{4})$/
     );
@@ -139,16 +169,23 @@ function parseUserDate(input) {
             monthNames[monthName] ??
             shortMonths[monthName];
 
-        if (
-            monthNumber !== undefined
-        ) {
+        if (monthNumber !== undefined) {
+
             month = monthNumber;
             day = Number(match[2]);
             year = Number(match[3]);
+
         }
     }
 
-    if (!month && month !== 0) {
+    // ------------------------------------------
+    // Day Month Year
+    // Example: 15 August 2026
+    // ------------------------------------------
+
+    if (
+        year === undefined
+    ) {
 
         match = value.match(
             /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/
@@ -163,19 +200,23 @@ function parseUserDate(input) {
                 monthNames[monthName] ??
                 shortMonths[monthName];
 
-            if (
-                monthNumber !== undefined
-            ) {
+            if (monthNumber !== undefined) {
+
                 day = Number(match[1]);
                 month = monthNumber;
                 year = Number(match[3]);
+
             }
         }
     }
 
-
     // ------------------------------------------
     // Numeric dates
+    // Supports:
+    // DD/MM/YYYY
+    // MM/DD/YYYY
+    // DD-MM-YYYY
+    // MM-DD-YYYY
     // ------------------------------------------
 
     if (
@@ -197,37 +238,24 @@ function parseUserDate(input) {
             year =
                 Number(match[3]);
 
-
-            /*
-             * If one number is greater than 12,
-             * we know that number is the day.
-             *
-             * Example:
-             * 15/08/2026 = 15 August
-             */
-
+            // If first > 12, first is definitely the day.
             if (first > 12) {
 
                 day = first;
                 month = second - 1;
 
-            } else if (second > 12) {
+            }
+
+            // If second > 12, second is definitely the day.
+            else if (second > 12) {
 
                 month = first - 1;
                 day = second;
 
-            } else {
+            }
 
-                /*
-                 * Ambiguous dates default to
-                 * month/day/year.
-                 *
-                 * For example:
-                 * 08/15/2026 = August 15
-                 *
-                 * If both are 12 or below,
-                 * written month names are recommended.
-                 */
+            // Ambiguous dates default to MM/DD/YYYY.
+            else {
 
                 month = first - 1;
                 day = second;
@@ -236,9 +264,8 @@ function parseUserDate(input) {
         }
     }
 
-
     // ------------------------------------------
-    // Make sure everything exists
+    // Validate
     // ------------------------------------------
 
     if (
@@ -246,13 +273,10 @@ function parseUserDate(input) {
         month === undefined ||
         day === undefined
     ) {
+
         return null;
+
     }
-
-
-    // ------------------------------------------
-    // Validate date
-    // ------------------------------------------
 
     const date =
         new Date(
@@ -265,19 +289,18 @@ function parseUserDate(input) {
             0
         );
 
-
     if (
         date.getFullYear() !== year ||
         date.getMonth() !== month ||
         date.getDate() !== day
     ) {
-        return null;
-    }
 
+        return null;
+
+    }
 
     return date;
 }
-
 
 // ==================================================
 // DISCORD TIMESTAMP
@@ -291,9 +314,8 @@ function discordTimestamp(date) {
 
 }
 
-
 // ==================================================
-// EXTRACT EMBED FIELD
+// EMBED FIELD READER
 // ==================================================
 
 function getEmbedField(
@@ -314,7 +336,6 @@ function getEmbedField(
         ? match[1]
         : fallback;
 }
-
 
 // ==================================================
 // BOT READY
@@ -344,6 +365,11 @@ client.once(
                 "Slash commands registered!"
             );
 
+            console.log(
+                "Registered commands:",
+                commands.map(command => command.name)
+            );
+
         } catch (error) {
 
             console.error(
@@ -356,7 +382,6 @@ client.once(
     }
 );
 
-
 // ==================================================
 // INTERACTION HANDLER
 // ==================================================
@@ -366,7 +391,6 @@ client.on(
     async interaction => {
 
         try {
-
 
             // ==========================================
             // SLASH COMMANDS
@@ -391,7 +415,6 @@ client.on(
 
                 return;
             }
-
 
             // ==========================================
             // ACCEPT LOA
@@ -419,8 +442,6 @@ client.on(
                     });
 
                 }
-                
-pendingLOAs.delete(userId);
 
                 const embed =
                     interaction.message.embeds[0];
@@ -428,9 +449,8 @@ pendingLOAs.delete(userId);
                 const description =
                     embed?.description || "";
 
-
                 // --------------------------------------
-                // Get original information
+                // Original LOA information
                 // --------------------------------------
 
                 const startDateText =
@@ -461,9 +481,8 @@ pendingLOAs.delete(userId);
                         "None provided"
                     );
 
-
                 // --------------------------------------
-                // Find user
+                // Find LOA user
                 // --------------------------------------
 
                 const userMatch =
@@ -476,7 +495,6 @@ pendingLOAs.delete(userId);
                         ? userMatch[1]
                         : null;
 
-
                 if (!userId) {
 
                     return interaction.reply({
@@ -487,10 +505,14 @@ pendingLOAs.delete(userId);
 
                 }
 
-
                 const userMention =
                     `<@${userId}>`;
 
+                // --------------------------------------
+                // Remove pending status
+                // --------------------------------------
+
+                pendingLOAs.delete(userId);
 
                 // --------------------------------------
                 // Parse dates
@@ -506,7 +528,6 @@ pendingLOAs.delete(userId);
                         endDateText
                     );
 
-
                 if (
                     !startDate ||
                     !endDate
@@ -514,33 +535,24 @@ pendingLOAs.delete(userId);
 
                     return interaction.reply({
                         content:
-                            "❌ I couldn't understand the LOA date. Please use a format such as **August 15, 2026**.",
+                            "❌ I couldn't understand the LOA date.",
                         ephemeral: true
                     });
 
                 }
 
-
                 // --------------------------------------
                 // Calculate LOA length
                 // --------------------------------------
 
-                const millisecondsPerDay =
-                    24 * 60 * 60 * 1000;
+                const difference =
+                    endDate.getTime() -
+                    startDate.getTime();
 
                 const days =
                     Math.round(
-                        (
-                            endDate.getTime() -
-                            startDate.getTime()
-                        ) /
-                        millisecondsPerDay
+                        difference / 86400000
                     );
-
-
-                // --------------------------------------
-                // 3–14 day limit
-                // --------------------------------------
 
                 if (days < 3) {
 
@@ -552,7 +564,6 @@ pendingLOAs.delete(userId);
 
                 }
 
-
                 if (days > 14) {
 
                     return interaction.reply({
@@ -562,7 +573,6 @@ pendingLOAs.delete(userId);
                     });
 
                 }
-
 
                 // --------------------------------------
                 // Discord timestamps
@@ -577,7 +587,6 @@ pendingLOAs.delete(userId);
                     discordTimestamp(
                         endDate
                     );
-
 
                 // --------------------------------------
                 // Fetch member
@@ -600,7 +609,6 @@ pendingLOAs.delete(userId);
                     );
 
                 }
-
 
                 // --------------------------------------
                 // Add LOA role
@@ -626,7 +634,6 @@ pendingLOAs.delete(userId);
 
                 }
 
-
                 // --------------------------------------
                 // Active LOA channel
                 // --------------------------------------
@@ -635,7 +642,6 @@ pendingLOAs.delete(userId);
                     await client.channels.fetch(
                         ACTIVE_LOA_CHANNEL
                     );
-
 
                 if (activeChannel) {
 
@@ -665,13 +671,13 @@ pendingLOAs.delete(userId);
                                     `꒰<:WhiteStar:1534608129042550995>꒱ **Ping User:** ${userMention}\n` +
 
                                     `꒰📝꒱ **Notes:** ${notes}`
+
                             }
                         ]
 
                     });
 
                 }
-
 
                 // --------------------------------------
                 // Update original request
@@ -696,23 +702,13 @@ pendingLOAs.delete(userId);
 
                 });
 
-
-                /*
-                 * IMPORTANT:
-                 *
-                 * The role removal is scheduled from
-                 * the requested end date.
-                 *
-                 * If the bot restarts before that time,
-                 * Node's setTimeout will be lost.
-                 *
-                 * The approval itself still works.
-                 */
+                // --------------------------------------
+                // Schedule LOA ending
+                // --------------------------------------
 
                 const timeUntilEnd =
                     endDate.getTime() -
                     Date.now();
-
 
                 if (
                     timeUntilEnd > 0 &&
@@ -729,18 +725,15 @@ pendingLOAs.delete(userId);
                                         userId
                                     );
 
-
                                 await loaMember.roles.remove(
                                     LOA_ROLE,
                                     "LOA ended"
                                 );
 
-
                                 const completionChannel =
                                     await client.channels.fetch(
                                         ACTIVE_LOA_CHANNEL
                                     );
-
 
                                 if (
                                     completionChannel
@@ -764,6 +757,7 @@ pendingLOAs.delete(userId);
                                                     `꒰<:WhiteStar:1534608129042550995>꒱ **Member:** ${userMention}\n` +
 
                                                     `꒰📅꒱ **Ended:** <t:${endTimestamp}:F>`
+
                                             }
                                         ]
 
@@ -789,9 +783,8 @@ pendingLOAs.delete(userId);
                 return;
             }
 
-
             // ==========================================
-            // DENY BUTTON
+            // DENY LOA BUTTON
             // ==========================================
 
             if (
@@ -813,7 +806,6 @@ pendingLOAs.delete(userId);
 
                 }
 
-
                 const modal =
                     new ModalBuilder()
                         .setCustomId(
@@ -822,7 +814,6 @@ pendingLOAs.delete(userId);
                         .setTitle(
                             "Deny LOA"
                         );
-
 
                 const reasonInput =
                     new TextInputBuilder()
@@ -841,18 +832,15 @@ pendingLOAs.delete(userId);
                         .setRequired(true)
                         .setMaxLength(500);
 
-
                 const row =
                     new ActionRowBuilder()
                         .addComponents(
                             reasonInput
                         );
 
-
                 modal.addComponents(
                     row
                 );
-
 
                 await interaction.showModal(
                     modal
@@ -861,9 +849,8 @@ pendingLOAs.delete(userId);
                 return;
             }
 
-
             // ==========================================
-            // DENY MODAL
+            // DENY LOA MODAL
             // ==========================================
 
             if (
@@ -887,12 +874,10 @@ pendingLOAs.delete(userId);
 
                 }
 
-
                 const denialReason =
                     interaction.fields.getTextInputValue(
                         "deny_reason"
                     );
-
 
                 const messageId =
                     interaction.customId.replace(
@@ -900,12 +885,10 @@ pendingLOAs.delete(userId);
                         ""
                     );
 
-
                 const loaChannel =
                     await client.channels.fetch(
                         LOA_REQUEST_CHANNEL
                     );
-
 
                 if (!loaChannel) {
 
@@ -916,7 +899,6 @@ pendingLOAs.delete(userId);
                     });
 
                 }
-
 
                 let loaMessage;
 
@@ -937,11 +919,9 @@ pendingLOAs.delete(userId);
 
                 }
 
-
                 const description =
                     loaMessage.embeds[0]
                         ?.description || "";
-
 
                 const startDate =
                     getEmbedField(
@@ -971,34 +951,37 @@ pendingLOAs.delete(userId);
                         "None provided"
                     );
 
-
                 const userMatch =
                     loaMessage.content.match(
                         /<@!?(\d+)/
                     );
-
 
                 const userId =
                     userMatch
                         ? userMatch[1]
                         : null;
 
-
                 const userMention =
                     userId
                         ? `<@${userId}>`
                         : "Unknown User";
 
+                // --------------------------------------
+                // Remove pending LOA
+                // --------------------------------------
+
+                if (userId) {
+                    pendingLOAs.delete(userId);
+                }
 
                 // --------------------------------------
-                // Send denied message
+                // Active LOA channel
                 // --------------------------------------
 
                 const activeChannel =
                     await client.channels.fetch(
                         ACTIVE_LOA_CHANNEL
                     );
-
 
                 if (activeChannel) {
 
@@ -1030,13 +1013,13 @@ pendingLOAs.delete(userId);
                                     `꒰<:WhiteStar:1534608129042550995>꒱ **Ping User:** ${userMention}\n` +
 
                                     `꒰📝꒱ **Notes:** ${notes}`
+
                             }
                         ]
 
                     });
 
                 }
-
 
                 // --------------------------------------
                 // Update original request
@@ -1058,8 +1041,6 @@ pendingLOAs.delete(userId);
 
                 });
 
-pendingLOAs.delete(userId);
-
                 await interaction.reply({
 
                     content:
@@ -1072,7 +1053,6 @@ pendingLOAs.delete(userId);
                 return;
             }
 
-
             // ==========================================
             // LOA FORM SUBMISSION
             // ==========================================
@@ -1081,38 +1061,78 @@ pendingLOAs.delete(userId);
                 interaction.isModalSubmit() &&
                 interaction.customId === "loa_modal"
             ) {
-                
-                        if (pendingLOAs.has(interaction.user.id)) {
-            return interaction.reply({
-                content:
-                    "❌ You already have a pending LOA request. Please wait for HR to approve or deny it before submitting another.",
-                ephemeral: true
-            });
-        }
 
-        pendingLOAs.add(interaction.user.id);
+                // --------------------------------------
+                // Only authorized role can submit LOA
+                // --------------------------------------
+
+                if (
+                    !interaction.member.roles.cache.has(
+                        LOA_ALLOWED_ROLE
+                    )
+                ) {
+
+                    return interaction.reply({
+                        content:
+                            "❌ You do not have permission to submit an LOA.",
+                        ephemeral: true
+                    });
+
+                }
+
+                // --------------------------------------
+                // Already has active LOA
+                // --------------------------------------
+
+                if (
+                    interaction.member.roles.cache.has(
+                        LOA_ROLE
+                    )
+                ) {
+
+                    return interaction.reply({
+                        content:
+                            "❌ You already have an active LOA. You can submit another LOA once your current LOA has finished.",
+                        ephemeral: true
+                    });
+
+                }
+
+                // --------------------------------------
+                // Already has pending LOA
+                // --------------------------------------
+
+                if (
+                    pendingLOAs.has(
+                        interaction.user.id
+                    )
+                ) {
+
+                    return interaction.reply({
+                        content:
+                            "❌ You already have a pending LOA request. Please wait for HR to approve or deny it before submitting another.",
+                        ephemeral: true
+                    });
+
+                }
 
                 const reason =
                     interaction.fields.getTextInputValue(
                         "loa_reason"
                     );
 
-
                 const startInput =
                     interaction.fields.getTextInputValue(
                         "loa_start"
                     ).trim();
-
 
                 const returnInput =
                     interaction.fields.getTextInputValue(
                         "loa_return"
                     ).trim();
 
-
                 let notes =
                     "None provided";
-
 
                 try {
 
@@ -1122,12 +1142,9 @@ pendingLOAs.delete(userId);
                         ).trim() ||
                         "None provided";
 
-                } catch (error) {
-
-                    // Notes are optional
-
+                } catch {
+                    // Optional
                 }
-
 
                 // --------------------------------------
                 // Parse dates
@@ -1143,26 +1160,21 @@ pendingLOAs.delete(userId);
                         returnInput
                     );
 
-
                 if (
                     !startDate ||
                     !returnDate
                 ) {
 
                     return interaction.reply({
-
                         content:
-                            "❌ I couldn't understand one of your dates. Please use a format such as **August 15, 2026**.",
-
+                            "❌ I couldn't understand one of your dates. Please use a format such as **August 15, 2026** or **15 August 2026**.",
                         ephemeral: true
-
                     });
 
                 }
 
-
                 // --------------------------------------
-                // Check date order
+                // Return date check
                 // --------------------------------------
 
                 if (
@@ -1171,70 +1183,48 @@ pendingLOAs.delete(userId);
                 ) {
 
                     return interaction.reply({
-
                         content:
                             "❌ Your return date cannot be before your start date.",
-
                         ephemeral: true
-
                     });
 
                 }
 
-
                 // --------------------------------------
-                // Calculate LOA length
+                // Calculate days
                 // --------------------------------------
 
                 const difference =
                     returnDate.getTime() -
                     startDate.getTime();
 
-
                 const days =
                     Math.round(
                         difference / 86400000
                     );
 
-
-                // --------------------------------------
-                // Minimum 3 days
-                // --------------------------------------
-
                 if (days < 3) {
 
                     return interaction.reply({
-
                         content:
                             "❌ Your LOA must be at least **3 days**.",
-
                         ephemeral: true
-
                     });
 
                 }
-
-
-                // --------------------------------------
-                // Maximum 14 days
-                // --------------------------------------
 
                 if (days > 14) {
 
                     return interaction.reply({
-
                         content:
                             "❌ Your LOA can be a maximum of **14 days**.",
-
                         ephemeral: true
-
                     });
 
                 }
 
-
                 // --------------------------------------
-                // Fetch LOA channel
+                // Find LOA channel
                 // --------------------------------------
 
                 const loaChannel =
@@ -1242,87 +1232,111 @@ pendingLOAs.delete(userId);
                         LOA_REQUEST_CHANNEL
                     );
 
-
                 if (!loaChannel) {
 
                     return interaction.reply({
-
                         content:
                             "❌ I couldn't find the LOA request channel.",
-
                         ephemeral: true
-
                     });
 
                 }
 
+                // --------------------------------------
+                // Mark as pending
+                // --------------------------------------
+
+                pendingLOAs.add(
+                    interaction.user.id
+                );
 
                 // --------------------------------------
-                // Send request
+                // Send LOA request
                 // --------------------------------------
-pendingLOAs.add(interaction.user.id);
-                await loaChannel.send({
 
-                    content:
-                        `${interaction.user} <@&${HIGH_RANK_ROLE}>`,
+                try {
 
-                    embeds: [
-                        {
-                            color: 0xEDE3D3,
+                    await loaChannel.send({
 
-                            description:
+                        content:
+                            `${interaction.user} <@&${HIGH_RANK_ROLE}>`,
 
-                                "# ꒰<:WhiteStar:1534608129042550995>  LOA REQUEST ꒱\n\n" +
+                        embeds: [
+                            {
+                                color: 0xEDE3D3,
 
-                                `꒰<:emojigg_1:1534654332090187897>: **Start Date:** ${startInput}\n` +
+                                description:
 
-                                `꒰<:emojigg_2:1534654486310555668>: **End Date:** ${returnInput}\n` +
+                                    "# ꒰<:WhiteStar:1534608129042550995>  LOA REQUEST ꒱\n\n" +
 
-                                `꒰<:emojigg_3:1534654794285715466>: **Reason:** ${reason}\n` +
+                                    `꒰<:emojigg_1:1534654332090187897>: **Start Date:** ${startInput}\n` +
 
-                                `꒰<:emojigg_4:1534654854750933012>: **Length:** ${days} day(s)\n` +
+                                    `꒰<:emojigg_2:1534654486310555668>: **End Date:** ${returnInput}\n` +
 
-                                `꒰<:emojigg_5:1534654998653435905>: **Notes:** ${notes}`
-                        }
-                    ],
+                                    `꒰<:emojigg_3:1534654794285715466>: **Reason:** ${reason}\n` +
 
-                    components: [
-                        {
-                            type: 1,
+                                    `꒰<:emojigg_4:1534654854750933012>: **Length:** ${days} day(s)\n` +
 
-                            components: [
+                                    `꒰<:emojigg_5:1534654998653435905>: **Notes:** ${notes}`
 
-                                {
-                                    type: 2,
-                                    style: 3,
-                                    label: "Accept LOA",
-                                    custom_id: "loa_accept",
+                            }
+                        ],
 
-                                    emoji: {
-                                        name: "WhiteStar",
-                                        id: "1534608129042550995"
+                        components: [
+                            {
+                                type: 1,
+
+                                components: [
+
+                                    {
+                                        type: 2,
+                                        style: 3,
+                                        label: "Accept LOA",
+                                        custom_id: "loa_accept",
+
+                                        emoji: {
+                                            name: "WhiteStar",
+                                            id: "1534608129042550995"
+                                        }
+                                    },
+
+                                    {
+                                        type: 2,
+                                        style: 4,
+                                        label: "Deny LOA",
+                                        custom_id: "loa_deny",
+
+                                        emoji: {
+                                            name: "WhiteStar",
+                                            id: "1534608129042550995"
+                                        }
                                     }
-                                },
 
-                                {
-                                    type: 2,
-                                    style: 4,
-                                    label: "Deny LOA",
-                                    custom_id: "loa_deny",
+                                ]
 
-                                    emoji: {
-                                        name: "WhiteStar",
-                                        id: "1534608129042550995"
-                                    }
-                                }
+                            }
+                        ]
 
-                            ]
+                    });
 
-                        }
-                    ]
+                } catch (error) {
 
-                });
+                    pendingLOAs.delete(
+                        interaction.user.id
+                    );
 
+                    console.error(
+                        "Could not send LOA request:",
+                        error
+                    );
+
+                    return interaction.reply({
+                        content:
+                            "❌ I couldn't submit your LOA request.",
+                        ephemeral: true
+                    });
+
+                }
 
                 await interaction.reply({
 
@@ -1342,7 +1356,6 @@ pendingLOAs.add(interaction.user.id);
                 "Interaction error:",
                 error
             );
-
 
             if (
                 !interaction.replied &&
@@ -1375,107 +1388,178 @@ const monitoredUsers = [
 ];
 
 const monitoredRoles = [
-    "1534394188333060208", // Owner Team
-    "1534394188333060207"  // Owner Team
+    "1534394188333060208",
+    "1534394188333060207"
 ];
 
-client.on("messageCreate", async message => {
+client.on(
+    "messageCreate",
+    async message => {
 
-    // Ignore bots
-    if (message.author.bot) {
-        return;
+        if (message.author.bot) {
+            return;
+        }
+
+        const taggedUser =
+            message.mentions.users.find(
+                user =>
+                    monitoredUsers.includes(
+                        user.id
+                    )
+            );
+
+        const taggedRole =
+            message.mentions.roles.find(
+                role =>
+                    monitoredRoles.includes(
+                        role.id
+                    )
+            );
+
+        if (
+            !taggedUser &&
+            !taggedRole
+        ) {
+            return;
+        }
+
+        let personText =
+            "the Owner Team";
+
+        let timezoneText =
+            "";
+
+        // --------------------------------------
+        // Aspen
+        // --------------------------------------
+
+        if (
+            taggedUser &&
+            taggedUser.id ===
+                "1311116544838860891"
+        ) {
+
+            personText =
+                "Aspen";
+
+            const now =
+                new Date();
+
+            const aspenTime =
+                new Intl.DateTimeFormat(
+                    "en-US",
+                    {
+                        timeZone:
+                            "America/Los_Angeles",
+
+                        hour:
+                            "numeric",
+
+                        minute:
+                            "2-digit",
+
+                        hour12:
+                            true,
+
+                        timeZoneName:
+                            "short"
+                    }
+                ).format(now);
+
+            timezoneText =
+                `Aspen's local time is currently **${aspenTime}**.`;
+
+        }
+
+        // --------------------------------------
+        // Gem
+        // --------------------------------------
+
+        else if (
+            taggedUser &&
+            taggedUser.id ===
+                "1128434621240057998"
+        ) {
+
+            personText =
+                "Gem";
+
+            const now =
+                new Date();
+
+            const gemTime =
+                new Intl.DateTimeFormat(
+                    "en-US",
+                    {
+                        timeZone:
+                            "America/Chicago",
+
+                        hour:
+                            "numeric",
+
+                        minute:
+                            "2-digit",
+
+                        hour12:
+                            true,
+
+                        timeZoneName:
+                            "short"
+                    }
+                ).format(now);
+
+            timezoneText =
+                `Gem's local time is currently **${gemTime}**.`;
+
+        }
+
+        // --------------------------------------
+        // Owner Team
+        // --------------------------------------
+
+        else if (taggedRole) {
+
+            personText =
+                "the Owner Team";
+
+            timezoneText =
+                "The Owner Team may currently be offline or busy.";
+
+        }
+
+        // --------------------------------------
+        // Response
+        // --------------------------------------
+
+        const reply =
+            await message.reply({
+
+                content:
+
+                    `🤍 **${personText} may be unavailable right now!**\n\n` +
+
+                    `${timezoneText}\n\n` +
+
+                    `They may currently be offline or busy. If you need something **right away**, please contact a **Staff member** for general assistance or **HR** if your question or concern is staff-related.\n\n` +
+
+                    `Thank you for your patience! ♡`
+
+            });
+
+        // Delete after 10 seconds
+        setTimeout(
+            () => {
+
+                reply
+                    .delete()
+                    .catch(() => {});
+
+            },
+            10000
+        );
+
     }
-
-    const taggedUser = message.mentions.users.find(
-        user => monitoredUsers.includes(user.id)
-    );
-
-    const taggedRole = message.mentions.roles.find(
-        role => monitoredRoles.includes(role.id)
-    );
-
-    if (!taggedUser && !taggedRole) {
-        return;
-    }
-
-    let personText = "the Owner Team";
-    let timezoneText = "";
-
-    // Aspen
-    if (
-        taggedUser &&
-        taggedUser.id === "1311116544838860891"
-    ) {
-        personText = "Aspen";
-        
-        const now = new Date();
-
-        const aspenTime = new Intl.DateTimeFormat(
-            "en-US",
-            {
-            timeZone: "America/Los_Angeles",
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true
-            }
-            ).format(now);
-
-        timezoneText =
-            `Aspen's local time is currently **${aspenTime}**.`;
-    }
-
-    // Gem
-    else if (
-
-        taggedUser &&
-
-        taggedUser.id === "1128434621240057998"
-
-    ) {
-
-        personText = "Gem";
-
-        const now = new Date();
-
-        const gemTime = new Intl.DateTimeFormat(
-
-            "en-US",
-
-            {
-
-                timeZone: "America/Chicago",
-
-                hour: "numeric",
-
-                minute: "2-digit",
-
-                hour12: true
-
-            }
-
-        ).format(now);
-
-        timezoneText =
-
-            `Gem's local time is currently **${gemTime}**.`;
-
-    }
-
-   
-
-    const reply = await message.reply({
-        content:
-            `🤍 **${personText} may be unavailable right now!**\n\n` +
-            `${timezoneText}\n\n` +
-            `They may currently be offline or busy. If you need something **right away**, please contact a **Staff member** for general assistance or **HR** if your question or concern is staff-related.\n\n` +
-            `Thank you for your patience! ♡`
-    });
-
-    // Delete after 10 seconds
-    setTimeout(() => {
-        reply.delete().catch(() => {});
-    }, 10000);
-});
+);
 
 // ==================================================
 // LOGIN
